@@ -34,7 +34,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--acc)}
 .brand h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
 .brand small{display:block;color:var(--fg3);font-size:12px;margin-top:-2px}
 .side-head{display:flex;justify-content:space-between;align-items:center;padding:6px 18px 8px;color:var(--fg3);font-size:11.5px;text-transform:uppercase;letter-spacing:.8px}
+.side-tools{padding:0 12px 10px;display:flex;flex-direction:column;gap:8px}
+.newbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 12px;border-radius:12px;font-weight:650;color:#fff;background:linear-gradient(135deg,var(--acc1),#5f8bff);box-shadow:0 6px 18px rgba(124,92,255,.28);transition:transform .08s,box-shadow .2s,filter .2s}
+.newbtn:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(124,92,255,.4)}
+.newbtn:active{transform:translateY(1px)}
+.newbtn svg{width:16px;height:16px}
+.newform{display:none;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:var(--bg3);border:1px solid var(--line2)}
+.newform.open{display:flex;animation:fade .15s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.newform input{width:100%;background:var(--bg2)}
+.newform-actions{display:flex;justify-content:flex-end;gap:6px}
+.btn.small{padding:6px 10px;font-size:12.5px;border-radius:9px}
+.btn.small svg{width:14px;height:14px}
+.search{position:relative;display:flex;align-items:center}
+.search svg{position:absolute;left:10px;width:15px;height:15px;color:var(--fg3);pointer-events:none}
+.search input{width:100%;padding:7px 28px 7px 32px;font-size:13px;background:var(--bg3)}
+.search .clear{position:absolute;right:6px;width:22px;height:22px;border-radius:6px;color:var(--fg3);font-size:11px;display:none}
+.search .clear:hover{background:var(--line2);color:var(--fg)}
+.search.has .clear{display:block}
 .sessions{flex:1;overflow:auto;padding:0 10px 10px;min-height:0}
+.nohit{color:var(--fg3);font-size:12.5px;text-align:center;padding:18px 10px}
 .sess{width:100%;text-align:left;padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:2px;position:relative;margin-bottom:2px}
 .sess:hover{background:var(--bg3)}
 .sess.active{background:linear-gradient(90deg,rgba(124,92,255,.22),rgba(56,222,255,.08));outline:1px solid rgba(124,92,255,.35)}
@@ -181,9 +200,32 @@ input[type=range]{accent-color:var(--acc);width:180px}
       <div><h1>Lytt</h1><small>speech to text · local</small></div>
     </div>
     <div class="side-head"><span>Sessions</span><span id="sessCount"></span></div>
+    <div class="side-tools">
+      <button class="newbtn" id="btnNew" title="Start a new session (Ctrl+N)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New session
+      </button>
+      <div class="newform" id="newForm">
+        <input id="newTitle" placeholder="Session name (optional)" spellcheck="false" maxlength="120">
+        <div class="newform-actions">
+          <button class="btn small" id="btnNewCancel">Cancel</button>
+          <button class="btn small primary" id="btnNewStart">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>Start
+          </button>
+        </div>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" placeholder="Search sessions and text" spellcheck="false">
+        <button class="clear" id="searchClear" title="Clear">✕</button>
+      </div>
+    </div>
     <div class="sessions" id="sessions"></div>
     <div class="side-foot">
       <span class="dev" id="devInfo" title="Compute device">Model not loaded</span>
+      <button class="iconbtn" id="btnAbout" title="About Lytt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+      </button>
       <button class="iconbtn" id="btnFolder" title="Open data folder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       </button>
@@ -319,9 +361,15 @@ input[type=range]{accent-color:var(--acc);width:180px}
         </select></div>
       <div class="row"><label>Compute</label>
         <select id="cDevice"><option value="auto">Auto (GPU if available)</option><option value="cuda">GPU (CUDA)</option><option value="cpu">CPU</option></select>
-        <label style="min-width:auto;margin-left:10px">Start hidden</label><div class="sw" id="cHidden"></div>
       </div>
       <div class="help">A new model is loaded the first time you record after saving (may take a while if it has to be downloaded).</div>
+    </div>
+
+    <div class="sec">
+      <h3>Window</h3>
+      <div class="row"><label>Close button hides to tray</label><div class="sw" id="cTray"></div>
+        <span class="help" style="margin:0">Off = the close button quits Lytt. No notifications either way.</span></div>
+      <div class="row"><label>Start hidden in tray</label><div class="sw" id="cHidden"></div></div>
     </div>
 
     <div class="actions">
@@ -329,6 +377,43 @@ input[type=range]{accent-color:var(--acc);width:180px}
       <button class="btn" id="btnCancel">Cancel</button>
       <button class="btn primary" id="btnSave">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= ABOUT ================= -->
+<div class="modal" id="about">
+  <div class="card" style="width:min(640px,92vw)">
+    <h2>About Lytt
+      <button class="iconbtn" id="btnCloseAbout" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </h2>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">
+      <div class="logo" style="width:56px;height:56px;border-radius:16px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" style="width:32px;height:32px"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></div>
+      <div>
+        <div style="font-size:20px;font-weight:650">Lytt <span id="abVersion" style="color:var(--fg3);font-weight:500;font-size:14px"></span></div>
+        <div style="color:var(--fg2)">Local speech-to-text for meetings. Nothing leaves your machine.</div>
+        <div style="color:var(--fg3);font-size:12.5px;margin-top:4px" id="abEnv"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>License</h3>
+      <p style="margin:0 0 8px;color:var(--fg2)">Lytt is released under the <b>MIT License</b>. Source code: <a href="#" id="abRepo" style="color:var(--acc2)"></a></p>
+      <p style="margin:0;color:var(--fg3);font-size:12.5px">The transcript and all recordings are stored only in the local <code>data</code> folder.</p>
+    </div>
+    <div class="sec">
+      <h3>Third-party components</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px" id="abTable">
+        <tr><td>OpenAI Whisper · large-v3-turbo weights (CTranslate2 conversion)</td><td>MIT</td></tr>
+        <tr><td>faster-whisper · CTranslate2 · Silero VAD</td><td>MIT</td></tr>
+        <tr><td>sherpa-onnx · ERes2Net speaker model (3D-Speaker, trained on VoxCeleb)</td><td>Apache-2.0</td></tr>
+        <tr><td>onnxruntime · PyAudioWPatch / PortAudio · Pillow · NumPy · SciPy</td><td>MIT / BSD</td></tr>
+        <tr><td>pywebview</td><td>BSD-3-Clause</td></tr>
+        <tr><td>pystray</td><td>LGPL-3.0</td></tr>
+        <tr><td>NVIDIA cuBLAS / cuDNN</td><td>NVIDIA EULA</td></tr>
+        <tr><td>Microsoft Edge WebView2 runtime</td><td>Microsoft</td></tr>
+      </table>
+      <p class="help" style="margin-top:10px">All components permit commercial use. The speaker model is trained on VoxCeleb, whose dataset terms some read as research-only; see README for details. Not legal advice.</p>
+    </div>
+    <div class="actions"><button class="btn primary" id="btnAboutOk">OK</button></div>
   </div>
 </div>
 
@@ -343,7 +428,7 @@ const S = {
   state: 'stopped', session: null, viewId: null, sessions: [], segments: [],
   cfg: null, modelState: 'idle', modelMsg: '', deviceInfo: '', backlog: 0,
   copySpeakers: true, copyTime: false, micMuted: false, captureMic: true,
-  follow: true, unseen: 0, ctxId: null,
+  follow: true, unseen: 0, ctxId: null, filterIds: null, query: '',
 };
 const PALETTE = ['#7c5cff','#e8556d','#2fb8a2','#f2a33c','#4c9fff','#c85ce8','#7bc043','#ff7a59','#33c3d9','#b58a4a'];
 const speakerColor = (name) => {
@@ -401,8 +486,10 @@ function renderPending() {
 }
 function renderSessions() {
   const box = $('#sessions'); box.innerHTML = '';
-  $('#sessCount').textContent = S.sessions.length || '';
-  for (const s of S.sessions) {
+  const list = S.filterIds ? S.sessions.filter(s => S.filterIds.includes(s.id)) : S.sessions;
+  $('#sessCount').textContent = S.filterIds ? `${list.length} / ${S.sessions.length}` : (S.sessions.length || '');
+  if (S.filterIds && !list.length) box.innerHTML = '<div class="nohit">No sessions match your search.</div>';
+  for (const s of list) {
     const b = document.createElement('button');
     b.className = 'sess' + (s.id === S.viewId ? ' active' : '') + (s.id === S.ctxId ? ' menu-open' : '');
     b.dataset.id = s.id;
@@ -565,7 +652,8 @@ $('#title').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 $('#btnFolder').onclick = () => api().open_data_folder();
 document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); $('#btnCopy').click(); }
-  if (e.key === 'Escape') { closeModal(); closeCtx(); }
+  if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'n') { e.preventDefault(); openNewForm(); }
+  if (e.key === 'Escape') { closeModal(); closeCtx(); closeAbout(); closeNewForm(); }
 });
 
 /* ------------------------- session context menu ------------------------- */
@@ -601,14 +689,62 @@ $('#ctxDelete').onclick = () => {
   }, 'Could not delete');
 };
 
+/* ------------------------- new session ------------------------- */
+function openNewForm() { $('#newForm').classList.add('open'); $('#newTitle').value = ''; setTimeout(() => $('#newTitle').focus(), 30); }
+function closeNewForm() { $('#newForm').classList.remove('open'); }
+async function startNewSession() {
+  const title = $('#newTitle').value.trim();
+  closeNewForm();
+  await safe(async () => {
+    const st = await api().new_session(title || null);
+    applyState(st);
+    if (st.session) await openSession(st.session.id);
+    await refreshSessions();
+    toast(st.state === 'recording' ? 'New session started' : 'Session created');
+  }, 'Could not start a new session');
+}
+$('#btnNew').onclick = () => $('#newForm').classList.contains('open') ? closeNewForm() : openNewForm();
+$('#btnNewCancel').onclick = closeNewForm;
+$('#btnNewStart').onclick = startNewSession;
+$('#newTitle').onkeydown = e => { if (e.key === 'Enter') startNewSession(); if (e.key === 'Escape') closeNewForm(); };
+
+/* ------------------------- search ------------------------- */
+let searchT;
+async function runSearch() {
+  const q = $('#search').value.trim();
+  $('#search').parentElement.classList.toggle('has', !!q);
+  S.query = q;
+  if (!q) { S.filterIds = null; renderSessions(); return; }
+  const ids = await api().search_sessions(q);
+  if (q !== S.query) return;         // a newer search finished first
+  S.filterIds = ids; renderSessions();
+}
+$('#search').oninput = () => { clearTimeout(searchT); searchT = setTimeout(() => safe(runSearch, 'Search failed'), 200); };
+$('#search').onkeydown = e => { if (e.key === 'Escape') { $('#search').value = ''; runSearch(); e.target.blur(); } };
+$('#searchClear').onclick = () => { $('#search').value = ''; runSearch(); };
+
+/* ------------------------- about ------------------------- */
+async function openAbout() {
+  const a = await api().get_about();
+  $('#abVersion').textContent = 'v' + a.version;
+  $('#abEnv').textContent = `Model ${a.model} · ${a.device_info || 'not loaded yet'} · Python ${a.python}`;
+  const r = $('#abRepo'); r.textContent = a.repo.replace('https://', ''); r.onclick = e => { e.preventDefault(); api().open_url(a.repo); };
+  $('#about').classList.add('open');
+}
+const closeAbout = () => $('#about').classList.remove('open');
+$('#btnAbout').onclick = () => safe(openAbout, 'Could not open About');
+$('#btnCloseAbout').onclick = closeAbout; $('#btnAboutOk').onclick = closeAbout;
+$('#about').onclick = e => { if (e.target === $('#about')) closeAbout(); };
+
 /* ------------------------- settings ------------------------- */
 const sw = (id, val) => { const el = $(id); el.classList.toggle('on', !!val); el.onclick = () => el.classList.toggle('on'); };
 const swv = id => $(id).classList.contains('on');
 async function openModal() {
   const c = S.cfg = await api().get_config();
   $('#cPrefix').value = c.prefix;
-  sw('#cCopySpeakers', S.copySpeakers); sw('#cCopyTime', S.copyTime);
+  sw('#cCopySpeakers', c.copy_speakers !== false); sw('#cCopyTime', !!c.copy_time);
   sw('#cSys', c.capture_system); sw('#cMic', c.capture_mic); sw('#cDiar', c.diarize); sw('#cHidden', c.start_hidden);
+  sw('#cTray', c.close_to_tray !== false);
   $('#cMyName').value = c.my_name; $('#cThr').value = c.speaker_threshold; $('#cThrVal').textContent = Number(c.speaker_threshold).toFixed(2);
   $('#cThr').oninput = () => $('#cThrVal').textContent = Number($('#cThr').value).toFixed(2);
   $('#cModel').value = c.model; $('#cDevice').value = c.device;
@@ -623,9 +759,9 @@ $('#btnSettings').onclick = () => safe(openModal, 'Could not open settings'); $(
 $('#modal').onclick = e => { if (e.target === $('#modal')) closeModal(); };
 $('#btnSave').onclick = () => safe(async () => {
   S.copySpeakers = swv('#cCopySpeakers'); S.copyTime = swv('#cCopyTime');
-  try { localStorage.setItem('lytt.copy', JSON.stringify({s:S.copySpeakers,t:S.copyTime})); } catch {}
   const cfg = {
     prefix: $('#cPrefix').value, capture_system: swv('#cSys'), capture_mic: swv('#cMic'),
+    copy_speakers: S.copySpeakers, copy_time: S.copyTime, close_to_tray: swv('#cTray'),
     mic_device: $('#cMicDev').value === '' ? null : parseInt($('#cMicDev').value),
     languages: [...document.querySelectorAll('#cLangs .check.on')].map(e => e.dataset.l),
     diarize: swv('#cDiar'), my_name: $('#cMyName').value.trim() || 'Me', speaker_threshold: parseFloat($('#cThr').value),
@@ -637,8 +773,8 @@ $('#btnQuit').onclick = () => { if (confirm('Quit Lytt completely? Any ongoing r
 
 /* ------------------------- init ------------------------- */
 async function init() {
-  try { const c = JSON.parse(localStorage.getItem('lytt.copy')||'null'); if (c) { S.copySpeakers = c.s; S.copyTime = c.t; } } catch {}
   S.cfg = await api().get_config();
+  S.copySpeakers = S.cfg.copy_speakers !== false; S.copyTime = !!S.cfg.copy_time;
   applyState(await api().get_state());
   await refreshSessions();
   if (S.session) openSession(S.session.id); else if (S.sessions.length) openSession(S.sessions[0].id); else renderTranscript();

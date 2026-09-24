@@ -101,6 +101,22 @@ class Store:
             ).fetchall()
             return [dict(r) for r in rows]
 
+    def search_sessions(self, query: str) -> list[int]:
+        """Session ids whose title or transcript contains the query (case-insensitive)."""
+        q = f"%{query.strip()}%"
+        if not query.strip():
+            return [s["id"] for s in self.list_sessions()]
+        with self._lock:
+            rows = self._con.execute(
+                """
+                SELECT DISTINCT s.id FROM sessions s
+                LEFT JOIN segments g ON g.session_id = s.id
+                WHERE s.title LIKE ? COLLATE NOCASE OR g.text LIKE ? COLLATE NOCASE OR g.speaker LIKE ? COLLATE NOCASE
+                """,
+                (q, q, q),
+            ).fetchall()
+            return [r[0] for r in rows]
+
     # ---------- segmenter ----------
     def add_segment(self, seg: dict) -> dict:
         with self._lock:

@@ -13,7 +13,8 @@ Nothing leaves your machine.
 - **Multilingual**: Norwegian, Swedish, English (plus Danish/German optional). Language is detected per utterance.
 - **Tray icon** next to the clock: colourful while recording, orange when paused, grey when stopped.
   Right-click for start / pause / stop.
-- **Sessions** are stored in SQLite. Right-click a session to rename, copy or delete it.
+- **Sessions** are stored in SQLite. **New session** button (Ctrl+N) lets you name a session before it starts.
+  Right-click a session to rename, copy or delete it. Search box filters by title, speaker and transcript text.
 - **Copy** button (Ctrl+Shift+C) puts your own prefix text (e.g. *"Write meeting minutes from this transcript:"*)
   in front of the transcript and copies everything to the clipboard.
 - **Mute yourself** by clicking the microphone meter while recording.
@@ -56,6 +57,8 @@ powershell -ExecutionPolicy Bypass -File "Create shortcuts.ps1" -Startup
 `-Startup` also adds Lytt to your Startup folder so it launches at login. If the shortcut does not work,
 right-click `Start Lytt.vbs` → *Send to* → *Desktop (create shortcut)*.
 
+Lytt runs as a single instance: starting it again just brings the existing window to the front.
+
 The first time, Windows may hide the tray icon behind the `^` overflow arrow; drag it out to keep it visible.
 
 ## Usage
@@ -68,8 +71,11 @@ The first time, Windows may hide the tray icon behind the `^` overflow arrow; dr
 | Copy with prefix | **Copy** button or `Ctrl+Shift+C` |
 | Rename a speaker | Click the speaker label |
 | Edit / delete an utterance | Double-click the text / hover and press ✕ |
+| New session with a name | **New session** button or `Ctrl+N` |
+| Find a session | Search box in the sidebar (title, speaker or transcript text) |
 | Rename / delete a session | Right-click the session in the list |
-| Close the window | Lytt keeps running in the tray. *Quit* is in the tray menu and in Settings |
+| About / licenses | ⓘ button bottom-left |
+| Close the window | Hides to the tray by default (change under Settings → Window). No notifications. *Quit* is in the tray menu and in Settings |
 
 **Start** creates a new session. **Pause** stops capturing; the next Start continues the same session.
 **Stop** ends the session. Everything is saved continuously to `data/lytt.db`.

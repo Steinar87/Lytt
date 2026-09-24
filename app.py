@@ -140,12 +140,15 @@ class Engine:
             self.tray.update()
 
     # ---- opptaksstyring
-    def start(self) -> dict:
+    def start(self, title: str | None = None, new_session: bool = False) -> dict:
         with self._lock:
-            if self.state == "recording":
+            if self.state == "recording" and not new_session:
                 return self.snapshot()
-            if self.session is None or self.session.get("status") == "stopped":
-                self.session = self.store.create_session()
+            if new_session and self.session and self.session.get("status") != "stopped":
+                self.recorder.stop()
+                self.store.set_status(self.session["id"], "stopped")
+            if new_session or self.session is None or self.session.get("status") == "stopped":
+                self.session = self.store.create_session((title or "").strip() or None)
                 self.session_t0 = self.session["started_at"]
                 self.diarizer.reset()
                 self.diarizer.threshold = float(self.cfg["speaker_threshold"])
@@ -284,6 +287,22 @@ class Api:
     def start(self):
         return self._e.start()
 
+    def new_session(self, title=None):
+        return self._e.start(title=title, new_session=True)
+
+    def search_sessions(self, query):
+        return self._e.store.search_sessions(query or "")
+
+    def get_about(self):
+        return {"version": cfgmod.APP_VERSION, "repo": cfgmod.APP_REPO,
+                "device_info": self._e.transcriber.device_info, "model": self._e.cfg.get("model"),
+                "python": sys.version.split()[0]}
+
+    def open_url(self, url):
+        if str(url).startswith("https://"):
+            os.startfile(url)
+        return True
+
     def pause(self):
         return self._e.pause()
 
@@ -414,9 +433,47 @@ def _show_window():
 ICON_PATH = os.path.join(APP_DIR, "ui", "lytt.ico")
 
 
+PORT_FILE = os.path.join(cfgmod.DATA_DIR, "lytt.port")
+
+
+def _single_instance() -> bool:
+    """Returns True if this is the only instance. Otherwise asks the running one to show itself."""
+    import socket
+    try:
+        with open(PORT_FILE) as f:
+            port = int(f.read().strip())
+        with socket.create_connection(("127.0.0.1", port), timeout=1) as s:
+            s.sendall(b"show\n")
+            return False          # another instance answered
+    except Exception:
+        pass                      # no instance, or a stale port file
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(2)
+    with open(PORT_FILE, "w") as f:
+        f.write(str(srv.getsockname()[1]))
+
+    def serve():
+        while True:
+            try:
+                conn, _ = srv.accept()
+                with conn:
+                    if b"show" in conn.recv(64):
+                        _show_window()
+            except Exception:
+                pass
+
+    threading.Thread(target=serve, name="single-instance", daemon=True).start()
+    return True
+
+
 def main():
     global engine
     os.makedirs(cfgmod.DATA_DIR, exist_ok=True)
+    if not _single_instance():
+        return
     # Own taskbar identity, so Windows shows Lytt's icon instead of grouping it under Python
     try:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Expectit.Lytt")
@@ -433,10 +490,11 @@ def main():
     engine.window = window
 
     def on_closing():
-        # Lukk-knappen skjuler bare vinduet; programmet lever videre i systemstatusfeltet.
-        window.hide()
-        if engine.tray:
-            engine.tray.notify("Lytt keeps running here. Right-click for start/stop.")
+        # Close button: hide to tray (default) or quit, depending on settings. Never a notification.
+        if engine.cfg.get("close_to_tray", True):
+            window.hide()
+            return False
+        threading.Thread(target=_quit, daemon=True).start()
         return False
 
     window.events.closing += on_closing

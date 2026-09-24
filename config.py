@@ -34,9 +34,16 @@ DEFAULTS: dict = {
     "min_speech_sec": 0.6,
     "silence_ms": 700,
     "max_chunk_sec": 25,
+    # Kopiering
+    "copy_speakers": True,
+    "copy_time": False,
     # Vindu
     "start_hidden": False,
+    "close_to_tray": True,       # False = the close button quits Lytt
 }
+
+APP_VERSION = "1.1.0"
+APP_REPO = "https://github.com/Steinar87/Lytt"
 
 _lock = threading.Lock()
 
