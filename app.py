@@ -482,8 +482,10 @@ def main():
     engine = Engine()
     api = Api(engine)
 
+    # Cache-buster: WebView2 has been seen serving a stale disk-cached copy of the UI
+    ui_url = f"{UI_PATH}?v={int(os.path.getmtime(UI_PATH))}"
     window = webview.create_window(
-        "Lytt", UI_PATH, js_api=api,
+        "Lytt", ui_url, js_api=api,
         width=1180, height=760, min_size=(860, 560),
         background_color="#0e1016", text_select=True,
     )
@@ -516,7 +518,7 @@ def main():
             engine.start()
 
     webview.start(after_start, gui="edgechromium", debug="--debug" in sys.argv, private_mode=False,
-                  icon=ICON_PATH)
+                  icon=ICON_PATH, storage_path=os.path.join(cfgmod.DATA_DIR, "webview"))
     _quit()
 
 
