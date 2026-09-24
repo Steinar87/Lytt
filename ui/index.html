@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lytt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#0e1016; --bg2:#13161e; --bg3:#191d27; --line:#232838; --line2:#2d3446;
+  --fg:#e8eaf0; --fg2:#a4abbd; --fg3:#6b7386;
+  --acc1:#7c5cff; --acc2:#38deff; --acc:#8d7bff;
+  --ok:#3ddc97; --warn:#ffb454; --danger:#ff5f6d;
+  --r:14px; --shadow:0 10px 30px rgba(0,0,0,.45);
+  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+input,textarea,select{font:inherit;color:var(--fg);background:var(--bg3);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--acc)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2a3040;border-radius:10px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#39415a}
+
+.app{display:grid;grid-template-columns:290px 1fr;height:100vh;min-height:0}
+
+/* ---------- sidebar ---------- */
+.side{background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;min-height:0}
+.brand{display:flex;align-items:center;gap:12px;padding:18px 18px 14px}
+.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--acc1),var(--acc2));display:grid;place-items:center;box-shadow:0 6px 18px rgba(124,92,255,.35);transition:filter .4s}
+.logo svg{width:22px;height:22px}
+.logo.off{background:linear-gradient(135deg,#5b606c,#454a57);box-shadow:none}
+.brand h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+.brand small{display:block;color:var(--fg3);font-size:12px;margin-top:-2px}
+.side-head{display:flex;justify-content:space-between;align-items:center;padding:6px 18px 8px;color:var(--fg3);font-size:11.5px;text-transform:uppercase;letter-spacing:.8px}
+.sessions{flex:1;overflow:auto;padding:0 10px 10px;min-height:0}
+.sess{width:100%;text-align:left;padding:10px 12px;border-radius:12px;display:flex;flex-direction:column;gap:2px;position:relative;margin-bottom:2px}
+.sess:hover{background:var(--bg3)}
+.sess.active{background:linear-gradient(90deg,rgba(124,92,255,.22),rgba(56,222,255,.08));outline:1px solid rgba(124,92,255,.35)}
+.sess.menu-open{outline:1px solid var(--acc)}
+.sess .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+.sess .m{color:var(--fg3);font-size:12px;display:flex;gap:8px}
+.sess .dot{position:absolute;right:12px;top:14px;width:8px;height:8px;border-radius:50%}
+.sess .dot.recording{background:var(--danger);box-shadow:0 0 0 4px rgba(255,95,109,.18);animation:pulse 1.4s infinite}
+.sess .dot.paused{background:var(--warn)}
+.side-foot{border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:10px;color:var(--fg3);font-size:12px}
+.side-foot .dev{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--fg2)}
+.iconbtn:hover{background:var(--bg3);color:var(--fg)}
+.iconbtn svg{width:18px;height:18px}
+
+/* ---------- context menu ---------- */
+.ctx{position:fixed;z-index:80;min-width:170px;background:#1a1f2b;border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:none}
+.ctx.open{display:block}
+.ctx button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:8px;font-weight:500}
+.ctx button:hover{background:var(--bg3)}
+.ctx button.danger{color:var(--danger)}
+.ctx button svg{width:16px;height:16px;flex:none}
+.ctx hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.top{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.015),transparent);flex-wrap:wrap;row-gap:8px}
+.title{flex:1 1 260px;min-width:200px}
+.title input{width:100%;background:transparent;border-color:transparent;font-size:18px;font-weight:650;padding:4px 8px;margin-left:-8px}
+.title input:hover{border-color:var(--line2)}
+.title input:focus{background:var(--bg3)}
+.sub{color:var(--fg3);font-size:12.5px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:3px 10px;border-radius:999px;background:var(--bg3);border:1px solid var(--line2);font-size:12px;color:var(--fg2);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--fg3);display:inline-block}
+.pill.recording i{background:var(--danger);box-shadow:0 0 0 3px rgba(255,95,109,.2);animation:pulse 1.4s infinite}
+.pill.paused i{background:var(--warn)}
+.pill.loading i{background:var(--acc2);animation:pulse 1s infinite}
+.pill.error{border-color:rgba(255,95,109,.5);color:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.meters{display:flex;gap:8px;align-items:center;flex:none}
+.meter{display:flex;align-items:center;gap:7px;color:var(--fg3);font-size:11.5px;padding:5px 8px;border-radius:10px;border:1px solid transparent}
+.meter svg{width:16px;height:16px;color:var(--fg3);flex:none}
+.meter.on svg{color:var(--acc2)}
+.meter.clickable{cursor:pointer}
+.meter.clickable:hover{background:var(--bg3);border-color:var(--line2)}
+.meter.muted{background:rgba(255,95,109,.1);border-color:rgba(255,95,109,.35)}
+.meter.muted svg{color:var(--danger)}
+.meter.muted .bar{opacity:.3}
+.bar{width:64px;height:6px;border-radius:4px;background:var(--bg3);overflow:hidden}
+.bar b{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,var(--acc1),var(--acc2));transition:width .12s}
+
+.ctrl{display:flex;align-items:center;gap:10px;flex:none;margin-left:auto}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;background:var(--bg3);border:1px solid var(--line2);font-weight:600;transition:background .15s,transform .05s;white-space:nowrap}
+.btn:hover:not(:disabled){background:#1f2432}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn svg{width:17px;height:17px;flex:none}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover:not(:disabled){background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.4)}
+.btn.primary{background:linear-gradient(135deg,var(--acc1),#5f8bff);border-color:transparent;color:#fff;box-shadow:0 6px 18px rgba(124,92,255,.3)}
+.btn.primary:hover:not(:disabled){background:linear-gradient(135deg,#8b6fff,#6f98ff)}
+.rec{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc1),var(--acc2));box-shadow:0 8px 24px rgba(124,92,255,.4);color:#fff;transition:transform .1s,box-shadow .2s;flex:none}
+.rec:hover{transform:scale(1.04)}
+.rec:active{transform:scale(.97)}
+.rec svg{width:24px;height:24px}
+.rec.recording{background:linear-gradient(135deg,#ffb454,#ff5f6d);box-shadow:0 8px 24px rgba(255,120,100,.4)}
+@media (max-width:1180px){
+  .top{padding:10px 16px}
+  .meters{order:5;width:100%;justify-content:flex-start;padding-top:4px;border-top:1px dashed var(--line)}
+  .btn .lbl{display:none}
+  .btn{padding:9px 11px}
+}
+
+.bodywrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:22px 26px 40px}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--fg3);text-align:center;gap:10px}
+.empty .big{width:88px;height:88px;border-radius:26px;background:var(--bg3);display:grid;place-items:center;margin-bottom:8px}
+.empty .big svg{width:44px;height:44px;color:var(--fg3)}
+.empty h2{margin:0;color:var(--fg2);font-weight:600;font-size:17px}
+.empty p{margin:0;max-width:420px}
+
+.grp{display:grid;grid-template-columns:130px 1fr;gap:14px;margin-bottom:16px;max-width:1000px}
+.who{display:flex;flex-direction:column;align-items:flex-end;gap:3px;padding-top:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:650;color:#fff;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;border:1px solid transparent}
+.chip:hover{filter:brightness(1.15)}
+.who time{color:var(--fg3);font-size:11.5px;font-variant-numeric:tabular-nums}
+.txt{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;position:relative;font-size:14.5px;line-height:1.6;min-width:0;overflow-wrap:anywhere}
+.txt .seg{display:inline;position:relative;border-radius:4px;padding:1px 2px;margin:0 -2px}
+.txt .seg:hover{background:rgba(124,92,255,.14)}
+.txt .seg.new{animation:pop .5s ease-out}
+@keyframes pop{0%{background:rgba(56,222,255,.28)}100%{background:transparent}}
+.txt .seg .x{position:absolute;right:-6px;top:-10px;display:none;background:var(--bg3);border:1px solid var(--line2);border-radius:6px;padding:0 5px;font-size:11px;color:var(--fg3)}
+.txt .seg:hover .x{display:inline-block}
+.lang{position:absolute;right:10px;bottom:6px;color:var(--fg3);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;opacity:.7}
+.pending{display:flex;align-items:center;gap:10px;color:var(--fg3);font-size:12.5px;margin-left:144px}
+.wave{display:inline-flex;gap:3px;align-items:center;height:14px}
+.wave b{width:3px;height:6px;border-radius:2px;background:var(--acc2);animation:wv .9s infinite ease-in-out}
+.wave b:nth-child(2){animation-delay:.15s}.wave b:nth-child(3){animation-delay:.3s}.wave b:nth-child(4){animation-delay:.45s}
+@keyframes wv{0%,100%{height:5px}50%{height:14px}}
+.jump{position:absolute;right:26px;bottom:18px;display:none;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#1a1f2b;border:1px solid var(--line2);box-shadow:var(--shadow);font-size:12.5px;font-weight:600;color:var(--fg2);z-index:5}
+.jump.show{display:inline-flex}
+.jump:hover{color:var(--fg);background:#20263a}
+.jump svg{width:14px;height:14px}
+.jump .cnt{background:linear-gradient(135deg,var(--acc1),var(--acc2));color:#fff;border-radius:999px;padding:0 7px;font-size:11px}
+
+.warn{margin:0 0 16px;padding:10px 14px;border-radius:12px;background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.35);color:var(--warn);font-size:13px}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(4,6,12,.6);display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);z-index:50}
+.modal.open{display:flex}
+.card{width:min(720px,92vw);max-height:88vh;overflow:auto;background:var(--bg2);border:1px solid var(--line2);border-radius:20px;box-shadow:var(--shadow);padding:22px 26px}
+.card h2{margin:0 0 18px;font-size:18px;font-weight:650;display:flex;justify-content:space-between;align-items:center}
+.sec{border-top:1px solid var(--line);padding:16px 0 6px}
+.sec h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--fg3)}
+.row{display:flex;gap:14px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.row label{color:var(--fg2);min-width:150px}
+.row .grow{flex:1;min-width:200px}
+textarea{width:100%;min-height:72px;resize:vertical;line-height:1.45}
+.help{color:var(--fg3);font-size:12px;margin:-6px 0 10px}
+.sw{position:relative;width:40px;height:22px;border-radius:999px;background:var(--line2);transition:.2s;flex:none;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:linear-gradient(135deg,var(--acc1),var(--acc2))}
+.sw.on::after{left:21px}
+.check{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg3);cursor:pointer;user-select:none}
+.check.on{border-color:var(--acc);background:rgba(124,92,255,.15)}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+input[type=range]{accent-color:var(--acc);width:180px}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1a1f2b;border:1px solid var(--line2);color:var(--fg);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);transition:.25s;pointer-events:none;display:flex;gap:8px;align-items:center;z-index:99;max-width:80vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:16px;height:16px;color:var(--ok);flex:none}
+.toast.err svg{color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo off" id="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round">
+          <path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>
+      </div>
+      <div><h1>Lytt</h1><small>speech to text · local</small></div>
+    </div>
+    <div class="side-head"><span>Sessions</span><span id="sessCount"></span></div>
+    <div class="sessions" id="sessions"></div>
+    <div class="side-foot">
+      <span class="dev" id="devInfo" title="Compute device">Model not loaded</span>
+      <button class="iconbtn" id="btnFolder" title="Open data folder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      </button>
+      <button class="iconbtn" id="btnSettings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="top">
+      <div class="title">
+        <input id="title" placeholder="No session selected" spellcheck="false">
+        <div class="sub">
+          <span class="pill" id="pill"><i></i><span id="pillText">Ready</span></span>
+          <span id="subInfo"></span>
+        </div>
+      </div>
+      <div class="meters" id="meters">
+        <div class="meter clickable" id="mMic" title="Microphone – click to mute / unmute">
+          <svg id="icoMic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <svg id="icoMicOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V6a3 3 0 0 0-5.9-.7"/><path d="M17 16.9A7 7 0 0 1 5 11M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></svg>
+          <div class="bar"><b></b></div>
+          <span class="mlabel" id="micLabel"></span>
+        </div>
+        <div class="meter" id="mSys" title="System audio (Teams, Meet …)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3l4 4V6L7 10zM15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>
+          <div class="bar"><b></b></div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" id="btnCopy" title="Copy transcript with your prefix text  (Ctrl+Shift+C)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+          <span class="lbl">Copy</span>
+        </button>
+        <button class="btn" id="btnExport" title="Export to text file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        </button>
+        <button class="btn danger" id="btnStop" title="End the session" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+          <span class="lbl">Stop</span>
+        </button>
+        <button class="rec" id="btnRec" title="Start / pause recording">
+          <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>
+          <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="5" width="4.5" height="14" rx="1.5"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="bodywrap">
+      <section class="body" id="body">
+        <div class="empty" id="empty">
+          <div class="big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></div>
+          <h2>Ready to listen</h2>
+          <p>Press the round button to start a new session. Lytt records system audio (e.g. Teams) and your microphone, and writes the text here as people speak.</p>
+        </div>
+        <div id="warnBox"></div>
+        <div id="groups"></div>
+        <div class="pending" id="pending" style="display:none">
+          <span class="wave"><b></b><b></b><b></b><b></b></span><span id="pendingText">Transcribing …</span>
+        </div>
+      </section>
+      <button class="jump" id="jump" title="Scroll to the latest text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+        <span>Latest</span><span class="cnt" id="jumpCnt" style="display:none"></span>
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- ================= CONTEXT MENU (sessions) ================= -->
+<div class="ctx" id="ctx">
+  <button id="ctxOpen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Open</button>
+  <button id="ctxRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L17 5a2 2 0 0 0-3 0L4 15.5z"/></svg>Rename</button>
+  <button id="ctxCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>Copy transcript</button>
+  <hr>
+  <button class="danger" id="ctxDelete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete</button>
+</div>
+
+<!-- ================= SETTINGS ================= -->
+<div class="modal" id="modal">
+  <div class="card">
+    <h2>Settings
+      <button class="iconbtn" id="btnCloseModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </h2>
+
+    <div class="sec" style="border-top:0;padding-top:0">
+      <h3>Copy</h3>
+      <div class="help">This text is placed in front of the transcript when you press “Copy”.</div>
+      <textarea id="cPrefix" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:10px">
+        <label>Include speaker names</label><div class="sw" id="cCopySpeakers"></div>
+        <label style="min-width:auto;margin-left:14px">Include timestamps</label><div class="sw" id="cCopyTime"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Audio sources</h3>
+      <div class="row"><label>System audio (Teams, Meet …)</label><div class="sw" id="cSys"></div></div>
+      <div class="row"><label>Microphone</label><div class="sw" id="cMic"></div>
+        <select id="cMicDev" class="grow"><option value="">Default microphone</option></select></div>
+    </div>
+
+    <div class="sec">
+      <h3>Languages</h3>
+      <div class="row" id="cLangs">
+        <span class="check" data-l="no">🇳🇴 Norwegian</span>
+        <span class="check" data-l="sv">🇸🇪 Swedish</span>
+        <span class="check" data-l="en">🇬🇧 English</span>
+        <span class="check" data-l="da">🇩🇰 Danish</span>
+        <span class="check" data-l="de">🇩🇪 German</span>
+      </div>
+      <div class="help">The language is detected per utterance among the selected ones. None selected = all languages.</div>
+    </div>
+
+    <div class="sec">
+      <h3>Speakers</h3>
+      <div class="row"><label>Separate speakers</label><div class="sw" id="cDiar"></div></div>
+      <div class="row"><label>My name (microphone)</label><input id="cMyName" class="grow" placeholder="Me"></div>
+      <div class="row"><label>Sensitivity</label><input type="range" id="cThr" min="0.25" max="0.70" step="0.01"><span id="cThrVal" style="color:var(--fg3);font-variant-numeric:tabular-nums"></span></div>
+      <div class="help">Lower = fewer speakers (more gets merged). Higher = more speakers. 0.45 is a good starting point. Click a speaker label to give them a name.</div>
+    </div>
+
+    <div class="sec">
+      <h3>Model</h3>
+      <div class="row"><label>Whisper model</label>
+        <select id="cModel" class="grow">
+          <option value="large-v3-turbo">large-v3-turbo · best quality, fast (recommended)</option>
+          <option value="large-v3">large-v3 · best quality, slower</option>
+          <option value="medium">medium · lighter</option>
+          <option value="small">small · very light, lower quality</option>
+        </select></div>
+      <div class="row"><label>Compute</label>
+        <select id="cDevice"><option value="auto">Auto (GPU if available)</option><option value="cuda">GPU (CUDA)</option><option value="cpu">CPU</option></select>
+        <label style="min-width:auto;margin-left:10px">Start hidden</label><div class="sw" id="cHidden"></div>
+      </div>
+      <div class="help">A new model is loaded the first time you record after saving (may take a while if it has to be downloaded).</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btnQuit" style="margin-right:auto;color:var(--fg3)">Quit Lytt</button>
+      <button class="btn" id="btnCancel">Cancel</button>
+      <button class="btn primary" id="btnSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span id="toastText"></span></div>
+
+<script>
+/* ===================================================================== */
+const $ = s => document.querySelector(s);
+const api = () => window.pywebview.api;
+
+const S = {
+  state: 'stopped', session: null, viewId: null, sessions: [], segments: [],
+  cfg: null, modelState: 'idle', modelMsg: '', deviceInfo: '', backlog: 0,
+  copySpeakers: true, copyTime: false, micMuted: false, captureMic: true,
+  follow: true, unseen: 0, ctxId: null,
+};
+const PALETTE = ['#7c5cff','#e8556d','#2fb8a2','#f2a33c','#4c9fff','#c85ce8','#7bc043','#ff7a59','#33c3d9','#b58a4a'];
+const speakerColor = (name) => {
+  if (S.cfg && name === (S.cfg.my_name || 'Me')) return 'linear-gradient(135deg,#7c5cff,#38deff)';
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const m = name.match(/(?:Speaker|Person) (\d+)/); const idx = m ? (parseInt(m[1]) - 1) : h;
+  return PALETTE[(idx + 1) % PALETTE.length];
+};
+const fmt = s => { s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`; };
+const fmtDate = t => { const d = new Date(t*1000); const now = new Date();
+  const same = d.toDateString() === now.toDateString();
+  const hm = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  return same ? `Today ${hm}` : d.toLocaleDateString([], {day:'2-digit',month:'short'}) + ' ' + hm; };
+let toastT; const toast = (msg, err) => { $('#toastText').textContent = msg; $('#toast').classList.toggle('err', !!err); $('#toast').classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>$('#toast').classList.remove('show'), err ? 3500 : 1800); };
+const safe = async (fn, failMsg) => { try { return await fn(); } catch (e) { console.error(e); toast((failMsg || 'Something went wrong') + (e && e.message ? ': ' + e.message : ''), true); } };
+
+/* ------------------------- rendering ------------------------- */
+function renderState() {
+  const st = S.state;
+  $('#logo').classList.toggle('off', st !== 'recording');
+  $('#btnRec').classList.toggle('recording', st === 'recording');
+  $('#icoPlay').style.display = st === 'recording' ? 'none' : '';
+  $('#icoPause').style.display = st === 'recording' ? '' : 'none';
+  $('#btnStop').disabled = st === 'stopped';
+  const pill = $('#pill'); pill.className = 'pill';
+  let txt = 'Ready';
+  if (S.modelState === 'loading') { pill.classList.add('loading'); txt = S.modelMsg || 'Loading model …'; }
+  else if (S.modelState === 'error') { pill.classList.add('error'); txt = 'Model error'; }
+  else if (st === 'recording') { pill.classList.add('recording'); txt = 'Recording'; }
+  else if (st === 'paused') { pill.classList.add('paused'); txt = 'Paused'; }
+  else if (S.viewId && S.session && S.session.id === S.viewId) txt = 'Stopped';
+  $('#pillText').textContent = txt;
+  $('#devInfo').textContent = S.deviceInfo ? `Whisper · ${S.deviceInfo}` : (S.modelState === 'loading' ? 'Loading model …' : 'Model loads on first recording');
+  $('#devInfo').title = S.modelMsg || '';
+  $('#meters').style.display = st === 'recording' ? 'flex' : 'none';
+  renderMic();
+  renderPending();
+  const viewingLive = S.session && S.viewId === S.session.id;
+  $('#btnRec').title = viewingLive || st === 'stopped' ? 'Start / pause recording' : 'Start a new session';
+}
+function renderMic() {
+  const m = $('#mMic');
+  m.style.display = S.captureMic ? 'flex' : 'none';
+  m.classList.toggle('muted', S.micMuted);
+  $('#icoMic').style.display = S.micMuted ? 'none' : '';
+  $('#icoMicOff').style.display = S.micMuted ? '' : 'none';
+  $('#micLabel').textContent = S.micMuted ? 'Muted' : '';
+  m.title = S.micMuted ? 'Microphone muted – click to unmute' : 'Microphone – click to mute';
+}
+function renderPending() {
+  const show = S.backlog > 0 && S.session && S.viewId === S.session.id;
+  $('#pending').style.display = show ? 'flex' : 'none';
+  $('#pendingText').textContent = S.backlog > 1 ? `Transcribing (${S.backlog} queued) …` : 'Transcribing …';
+}
+function renderSessions() {
+  const box = $('#sessions'); box.innerHTML = '';
+  $('#sessCount').textContent = S.sessions.length || '';
+  for (const s of S.sessions) {
+    const b = document.createElement('button');
+    b.className = 'sess' + (s.id === S.viewId ? ' active' : '') + (s.id === S.ctxId ? ' menu-open' : '');
+    b.dataset.id = s.id;
+    b.innerHTML = `<span class="t"></span><span class="m"><span>${fmtDate(s.started_at)}</span><span>·</span><span>${fmt(s.duration)}</span><span>·</span><span>${s.n_segments} utterances</span></span>` +
+      (s.status !== 'stopped' ? `<span class="dot ${s.status}"></span>` : '');
+    b.querySelector('.t').textContent = s.title;
+    b.onclick = () => openSession(s.id);
+    b.oncontextmenu = (e) => { e.preventDefault(); openCtx(e.clientX, e.clientY, s.id); };
+    box.appendChild(b);
+  }
+}
+function renderTranscript() {
+  const g = $('#groups'); g.innerHTML = ''; lastGroup = null;
+  const has = S.segments.length > 0;
+  $('#empty').style.display = has || S.viewId ? 'none' : 'flex';
+  $('#title').value = S.viewId ? (S.sessions.find(s=>s.id===S.viewId)||S.session||{}).title || '' : '';
+  $('#title').disabled = !S.viewId;
+  if (S.viewId && !has) {
+    g.innerHTML = `<div class="empty" style="height:60%"><h2>No text yet</h2><p>${S.state==='recording' && S.session && S.session.id===S.viewId ? 'Listening … text appears when someone speaks.' : 'This session is empty.'}</p></div>`;
+  }
+  let cur = null;
+  for (const seg of S.segments) {
+    if (!cur || cur.speaker !== seg.speaker || seg.t_start - cur.last > 25) {
+      cur = makeGroup(seg); g.appendChild(cur.el);
+    }
+    appendSeg(cur, seg, false);
+  }
+  lastGroup = cur;
+  $('#subInfo').textContent = has ? `${S.segments.length} utterances · ${fmt(S.segments[S.segments.length-1].t_end)}` : '';
+  S.follow = true; S.unseen = 0; renderJump();
+  scrollBottom(true);
+}
+function makeGroup(seg) {
+  const el = document.createElement('div'); el.className = 'grp';
+  el.innerHTML = `<div class="who"><span class="chip" title="Click to rename this speaker"></span><time>${fmt(seg.t_start)}</time></div><div class="txt"><span class="lang"></span></div>`;
+  const chip = el.querySelector('.chip'); chip.textContent = seg.speaker; chip.style.background = speakerColor(seg.speaker);
+  chip.onclick = () => renameSpeaker(seg.speaker);
+  return { el, speaker: seg.speaker, last: seg.t_end, txt: el.querySelector('.txt'), langs: new Set() };
+}
+function appendSeg(grp, seg, isNew) {
+  const sp = document.createElement('span'); sp.className = 'seg' + (isNew ? ' new' : ''); sp.dataset.id = seg.id;
+  sp.textContent = seg.text + ' ';
+  sp.title = `${fmt(seg.t_start)}–${fmt(seg.t_end)} · ${seg.source === 'mic' ? 'microphone' : 'system audio'} · double-click to edit`;
+  const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.title = 'Delete utterance';
+  x.onclick = (e) => { e.stopPropagation(); safe(async () => { await api().delete_segment(seg.id); S.segments = S.segments.filter(s=>s.id!==seg.id); renderTranscript(); }, 'Could not delete'); };
+  sp.appendChild(x);
+  sp.ondblclick = () => editSeg(seg);
+  grp.txt.insertBefore(sp, grp.txt.querySelector('.lang'));
+  grp.last = seg.t_end;
+  if (seg.language) { grp.langs.add(seg.language); grp.txt.querySelector('.lang').textContent = [...grp.langs].join(' · '); }
+}
+function editSeg(seg) {
+  const t = prompt('Edit text:', seg.text);
+  if (t === null || t.trim() === seg.text) return;
+  safe(async () => { await api().update_segment(seg.id, t); seg.text = t.trim(); renderTranscript(); }, 'Could not save');
+}
+function renameSpeaker(old) {
+  const n = prompt(`New name for “${old}”:`, old);
+  if (!n || n.trim() === old) return;
+  safe(async () => { await api().rename_speaker(S.viewId, old, n.trim()); S.segments.forEach(s=>{ if (s.speaker===old) s.speaker=n.trim(); }); renderTranscript(); }, 'Could not rename');
+}
+let lastGroup = null;
+function addLiveSegment(seg) {
+  if (seg.session_id !== S.viewId) return;
+  const g = $('#groups');
+  if (S.segments.length === 0) g.innerHTML = '';
+  S.segments.push(seg);
+  if (lastGroup && lastGroup.el.parentNode === g && lastGroup.speaker === seg.speaker && seg.t_start - lastGroup.last <= 25) {
+    appendSeg(lastGroup, seg, true);
+  } else {
+    lastGroup = makeGroup(seg); g.appendChild(lastGroup.el); appendSeg(lastGroup, seg, true);
+  }
+  $('#subInfo').textContent = `${S.segments.length} utterances · ${fmt(seg.t_end)}`;
+  if (S.follow) scrollBottom(false); else { S.unseen++; renderJump(); }
+}
+/* Follow mode: auto-scroll only while the user is at the bottom. Scrolling up pauses it. */
+const body = $('#body');
+function atBottom() { return body.scrollHeight - body.scrollTop - body.clientHeight < 40; }
+function scrollBottom(force) {
+  if (!force && !S.follow) return;
+  requestAnimationFrame(() => { body.scrollTop = body.scrollHeight; });
+}
+body.addEventListener('scroll', () => {
+  const b = atBottom();
+  if (b && !S.follow) { S.follow = true; S.unseen = 0; }
+  else if (!b && S.follow) { S.follow = false; }
+  renderJump();
+});
+function renderJump() {
+  const j = $('#jump'); const show = !S.follow && S.segments.length > 0;
+  j.classList.toggle('show', show);
+  $('#jumpCnt').style.display = S.unseen ? '' : 'none'; $('#jumpCnt').textContent = S.unseen;
+}
+$('#jump').onclick = () => { S.follow = true; S.unseen = 0; renderJump(); scrollBottom(true); };
+function renderWarnings(w) { $('#warnBox').innerHTML = (w||[]).map(x => `<div class="warn">⚠ ${x}</div>`).join(''); }
+
+/* ------------------------- data ------------------------- */
+async function refreshSessions() { S.sessions = await api().list_sessions(); renderSessions(); }
+async function openSession(id) {
+  const s = await api().get_session(id); if (!s) return;
+  S.viewId = id; S.segments = s.segments;
+  renderSessions(); renderTranscript(); renderState();
+}
+function applyState(st) {
+  S.state = st.state; S.session = st.session; S.modelState = st.model_state; S.modelMsg = st.model_msg;
+  S.deviceInfo = st.device_info; S.backlog = st.backlog; S.micMuted = !!st.mic_muted; S.captureMic = st.capture_mic !== false;
+  renderWarnings(st.warnings);
+  renderState();
+}
+
+/* ------------------------- events from Python ------------------------- */
+window.Lytt = {
+  onEvent(e) {
+    switch (e.type) {
+      case 'state': {
+        const wasLive = S.session && S.viewId === S.session.id;
+        const newSession = e.session && (!S.session || e.session.id !== S.session.id);
+        applyState(e);
+        if (newSession && (wasLive || S.viewId === null || S.state === 'recording')) openSession(e.session.id);
+        break; }
+      case 'sessions': refreshSessions(); break;
+      case 'segment': S.backlog = e.backlog; addLiveSegment(e.segment); renderPending(); refreshSessionsDebounced(); break;
+      case 'model': S.modelState = e.model_state; S.modelMsg = e.model_msg; S.deviceInfo = e.device_info; S.backlog = e.backlog; renderState(); break;
+      case 'backlog': S.backlog = e.backlog; renderPending(); break;
+      case 'levels': setLevels(e.levels, e.speaking); break;
+    }
+  }
+};
+let rsT; const refreshSessionsDebounced = () => { clearTimeout(rsT); rsT = setTimeout(refreshSessions, 1500); };
+function setLevels(lv, sp) {
+  const map = { mic: '#mMic', system: '#mSys' };
+  for (const k in map) {
+    const el = $(map[k]); const v = lv[k];
+    if (k === 'system') el.style.display = v === undefined ? 'none' : 'flex';
+    const pct = v === undefined ? 0 : Math.min(100, Math.max(2, Math.sqrt(v) * 240));
+    el.querySelector('b').style.width = pct + '%';
+    el.classList.toggle('on', !!(sp && sp[k]));
+  }
+}
+
+/* ------------------------- controls ------------------------- */
+$('#btnRec').onclick = () => safe(async () => {
+  const viewingLive = S.session && S.viewId === S.session.id && S.state !== 'stopped';
+  if (S.state === 'recording') { applyState(await api().pause()); return; }
+  if (S.state === 'paused' && viewingLive) { applyState(await api().start()); return; }
+  if (S.state === 'paused' && !viewingLive) { await api().stop(); }
+  const st = await api().start(); applyState(st); if (st.session) await openSession(st.session.id); refreshSessions();
+}, 'Could not start');
+$('#btnStop').onclick = () => safe(async () => { applyState(await api().stop()); refreshSessions(); toast('Session ended'); }, 'Could not stop');
+$('#mMic').onclick = () => safe(async () => { applyState(await api().set_mic_muted(!S.micMuted)); toast(S.micMuted ? 'Microphone muted' : 'Microphone on'); }, 'Could not change microphone');
+async function copySession(id) {
+  if (!id) return toast('No session selected', true);
+  const r = await api().copy_transcript(id, true, S.copySpeakers, S.copyTime);
+  if (r && r.ok) toast(`Copied ${r.chars.toLocaleString()} characters with prefix`); else toast('Could not access the clipboard', true);
+}
+$('#btnCopy').onclick = () => safe(() => copySession(S.viewId), 'Copy failed');
+$('#btnExport').onclick = () => safe(async () => { if (!S.viewId) return toast('No session selected', true); const p = await api().export_transcript(S.viewId, S.copySpeakers, true); if (p) toast('Exported to text file'); }, 'Export failed');
+$('#title').onchange = () => { if (S.viewId) safe(async () => { await api().rename_session(S.viewId, $('#title').value); refreshSessions(); }, 'Could not rename'); };
+$('#title').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
+$('#btnFolder').onclick = () => api().open_data_folder();
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); $('#btnCopy').click(); }
+  if (e.key === 'Escape') { closeModal(); closeCtx(); }
+});
+
+/* ------------------------- session context menu ------------------------- */
+function openCtx(x, y, id) {
+  S.ctxId = id; renderSessions();
+  const m = $('#ctx'); m.classList.add('open');
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+  m.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+}
+function closeCtx() { if (S.ctxId === null) return; S.ctxId = null; $('#ctx').classList.remove('open'); renderSessions(); }
+document.addEventListener('mousedown', e => { if (!$('#ctx').contains(e.target)) closeCtx(); });
+window.addEventListener('blur', closeCtx);
+$('#ctxOpen').onclick = () => { const id = S.ctxId; closeCtx(); openSession(id); };
+$('#ctxCopy').onclick = () => { const id = S.ctxId; closeCtx(); safe(() => copySession(id), 'Copy failed'); };
+$('#ctxRename').onclick = () => {
+  const id = S.ctxId; closeCtx();
+  const s = S.sessions.find(x => x.id === id); if (!s) return;
+  const t = prompt('Rename session:', s.title);
+  if (t === null || !t.trim() || t.trim() === s.title) return;
+  safe(async () => { await api().rename_session(id, t.trim()); await refreshSessions(); if (S.viewId === id) $('#title').value = t.trim(); }, 'Could not rename');
+};
+$('#ctxDelete').onclick = () => {
+  const id = S.ctxId; closeCtx();
+  const s = S.sessions.find(x => x.id === id); if (!s) return;
+  const live = S.session && S.session.id === id && S.state !== 'stopped';
+  if (!confirm(`Delete the session “${s.title}”?${live ? '\n\nThis session is currently recording; recording will stop.' : ''}`)) return;
+  safe(async () => {
+    await api().delete_session(id);
+    if (S.viewId === id) { S.viewId = null; S.segments = []; renderTranscript(); }
+    applyState(await api().get_state()); await refreshSessions();
+    toast('Session deleted');
+  }, 'Could not delete');
+};
+
+/* ------------------------- settings ------------------------- */
+const sw = (id, val) => { const el = $(id); el.classList.toggle('on', !!val); el.onclick = () => el.classList.toggle('on'); };
+const swv = id => $(id).classList.contains('on');
+async function openModal() {
+  const c = S.cfg = await api().get_config();
+  $('#cPrefix').value = c.prefix;
+  sw('#cCopySpeakers', S.copySpeakers); sw('#cCopyTime', S.copyTime);
+  sw('#cSys', c.capture_system); sw('#cMic', c.capture_mic); sw('#cDiar', c.diarize); sw('#cHidden', c.start_hidden);
+  $('#cMyName').value = c.my_name; $('#cThr').value = c.speaker_threshold; $('#cThrVal').textContent = Number(c.speaker_threshold).toFixed(2);
+  $('#cThr').oninput = () => $('#cThrVal').textContent = Number($('#cThr').value).toFixed(2);
+  $('#cModel').value = c.model; $('#cDevice').value = c.device;
+  document.querySelectorAll('#cLangs .check').forEach(el => { el.classList.toggle('on', c.languages.includes(el.dataset.l)); el.onclick = () => el.classList.toggle('on'); });
+  const sel = $('#cMicDev'); sel.innerHTML = '<option value="">Default microphone</option>';
+  try { for (const m of await api().list_mics()) { const o = document.createElement('option'); o.value = m.index; o.textContent = m.name + (m.default ? ' (default)' : ''); sel.appendChild(o); } } catch {}
+  sel.value = c.mic_device === null || c.mic_device === undefined ? '' : String(c.mic_device);
+  $('#modal').classList.add('open');
+}
+function closeModal() { $('#modal').classList.remove('open'); }
+$('#btnSettings').onclick = () => safe(openModal, 'Could not open settings'); $('#btnCloseModal').onclick = closeModal; $('#btnCancel').onclick = closeModal;
+$('#modal').onclick = e => { if (e.target === $('#modal')) closeModal(); };
+$('#btnSave').onclick = () => safe(async () => {
+  S.copySpeakers = swv('#cCopySpeakers'); S.copyTime = swv('#cCopyTime');
+  try { localStorage.setItem('lytt.copy', JSON.stringify({s:S.copySpeakers,t:S.copyTime})); } catch {}
+  const cfg = {
+    prefix: $('#cPrefix').value, capture_system: swv('#cSys'), capture_mic: swv('#cMic'),
+    mic_device: $('#cMicDev').value === '' ? null : parseInt($('#cMicDev').value),
+    languages: [...document.querySelectorAll('#cLangs .check.on')].map(e => e.dataset.l),
+    diarize: swv('#cDiar'), my_name: $('#cMyName').value.trim() || 'Me', speaker_threshold: parseFloat($('#cThr').value),
+    model: $('#cModel').value, device: $('#cDevice').value, start_hidden: swv('#cHidden'),
+  };
+  S.cfg = await api().save_config(cfg); closeModal(); toast('Settings saved'); applyState(await api().get_state()); renderTranscript();
+}, 'Could not save settings');
+$('#btnQuit').onclick = () => { if (confirm('Quit Lytt completely? Any ongoing recording will stop.')) api().quit(); };
+
+/* ------------------------- init ------------------------- */
+async function init() {
+  try { const c = JSON.parse(localStorage.getItem('lytt.copy')||'null'); if (c) { S.copySpeakers = c.s; S.copyTime = c.t; } } catch {}
+  S.cfg = await api().get_config();
+  applyState(await api().get_state());
+  await refreshSessions();
+  if (S.session) openSession(S.session.id); else if (S.sessions.length) openSession(S.sessions[0].id); else renderTranscript();
+}
+window.addEventListener('pywebviewready', () => safe(init, 'Startup failed'));
+</script>
+</body>
+</html>
