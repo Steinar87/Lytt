@@ -370,6 +370,8 @@ input[type=range]{accent-color:var(--acc);width:180px}
       <div class="row"><label>Close button hides to tray</label><div class="sw" id="cTray"></div>
         <span class="help" style="margin:0">Off = the close button quits Lytt. No notifications either way.</span></div>
       <div class="row"><label>Start hidden in tray</label><div class="sw" id="cHidden"></div></div>
+      <div class="row"><label>Start with Windows</label><div class="sw" id="cAutostart"></div>
+        <span class="help" style="margin:0">Off by default. Uses a per-user Run entry; no admin rights needed.</span></div>
     </div>
 
     <div class="actions">
@@ -744,7 +746,7 @@ async function openModal() {
   $('#cPrefix').value = c.prefix;
   sw('#cCopySpeakers', c.copy_speakers !== false); sw('#cCopyTime', !!c.copy_time);
   sw('#cSys', c.capture_system); sw('#cMic', c.capture_mic); sw('#cDiar', c.diarize); sw('#cHidden', c.start_hidden);
-  sw('#cTray', c.close_to_tray !== false);
+  sw('#cTray', c.close_to_tray !== false); sw('#cAutostart', !!c.start_with_windows);
   $('#cMyName').value = c.my_name; $('#cThr').value = c.speaker_threshold; $('#cThrVal').textContent = Number(c.speaker_threshold).toFixed(2);
   $('#cThr').oninput = () => $('#cThrVal').textContent = Number($('#cThr').value).toFixed(2);
   $('#cModel').value = c.model; $('#cDevice').value = c.device;
@@ -761,7 +763,7 @@ $('#btnSave').onclick = () => safe(async () => {
   S.copySpeakers = swv('#cCopySpeakers'); S.copyTime = swv('#cCopyTime');
   const cfg = {
     prefix: $('#cPrefix').value, capture_system: swv('#cSys'), capture_mic: swv('#cMic'),
-    copy_speakers: S.copySpeakers, copy_time: S.copyTime, close_to_tray: swv('#cTray'),
+    copy_speakers: S.copySpeakers, copy_time: S.copyTime, close_to_tray: swv('#cTray'), start_with_windows: swv('#cAutostart'),
     mic_device: $('#cMicDev').value === '' ? null : parseInt($('#cMicDev').value),
     languages: [...document.querySelectorAll('#cLangs .check.on')].map(e => e.dataset.l),
     diarize: swv('#cDiar'), my_name: $('#cMyName').value.trim() || 'Me', speaker_threshold: parseFloat($('#cThr').value),

@@ -40,6 +40,7 @@ DEFAULTS: dict = {
     # Vindu
     "start_hidden": False,
     "close_to_tray": True,       # False = the close button quits Lytt
+    "start_with_windows": False, # True = HKCU Run entry (no admin needed)
 }
 
 APP_VERSION = "1.1.0"

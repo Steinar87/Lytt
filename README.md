@@ -51,11 +51,13 @@ Generate the icon and run the self-test:
 Double-click **Start Lytt.vbs** (no console window), or create shortcuts:
 
 ```bash
-powershell -ExecutionPolicy Bypass -File "Create shortcuts.ps1" -Startup
+powershell -ExecutionPolicy Bypass -File "Create shortcuts.ps1"
 ```
 
-`-Startup` also adds Lytt to your Startup folder so it launches at login. If the shortcut does not work,
-right-click `Start Lytt.vbs` → *Send to* → *Desktop (create shortcut)*.
+If the shortcut does not work, right-click `Start Lytt.vbs` → *Send to* → *Desktop (create shortcut)*.
+
+Lytt does **not** start with Windows by default. Turn it on under *Settings → Window → Start with Windows*;
+this writes a per-user Run entry (no admin rights) and turning it off removes it again.
 
 Lytt runs as a single instance: starting it again just brings the existing window to the front.
 

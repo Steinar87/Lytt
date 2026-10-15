@@ -16,6 +16,7 @@ import numpy as np
 import webview
 
 import config as cfgmod
+import autostart
 from audio import Recorder
 from diarizer import Diarizer
 from store import Store
@@ -264,6 +265,10 @@ class Engine:
     def save_config(self, cfg: dict) -> dict:
         self.cfg = cfgmod.save({**self.cfg, **cfg})
         self.diarizer.threshold = float(self.cfg["speaker_threshold"])
+        try:
+            autostart.set_enabled(bool(self.cfg.get("start_with_windows")))
+        except Exception as e:
+            log("autostart:", e)
         return self.cfg
 
     def shutdown(self) -> None:
@@ -474,6 +479,7 @@ def main():
     os.makedirs(cfgmod.DATA_DIR, exist_ok=True)
     if not _single_instance():
         return
+    autostart.sync(bool(cfgmod.load().get("start_with_windows")))
     # Own taskbar identity, so Windows shows Lytt's icon instead of grouping it under Python
     try:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Expectit.Lytt")
